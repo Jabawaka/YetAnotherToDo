@@ -1,6 +1,9 @@
 [package]
-name = "todo_gui"
+name = "yet_another_todo"
 version = "0.1.0"
 edition = "2021"
+authors = ["Sergio Rubio srubio@jabawaka.com"]
+publish = false
 
 [dependencies]
+eframe = "0.31"
