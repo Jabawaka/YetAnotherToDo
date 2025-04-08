@@ -1,22 +1,32 @@
-use eframe::egui::{self, Label, RichText, Sense, TextEdit, ViewportBuilder};
+use eframe::egui::{self, Label, RichText, Sense, TextEdit};
 
 
 fn main() {
-    let mut native_options = eframe::NativeOptions::default();
-    //let viewport = ViewportBuilder::default().with_inner_size([300.0, 600.0]);
-    //native_options.viewport = viewport;
+    let native_options = eframe::NativeOptions::default();
 
     let _ = eframe::run_native("Yet Another ToDo",  native_options, Box::new(|cc| Ok(Box::new(MyApp::new(cc)))));
 }
 
 
+#[derive(serde::Serialize, serde::Deserialize)]
 struct Task {
     text: String,
     done: bool,
     edit: bool,
 }
 
+impl Task {
+    fn default() -> Self {
+        Task {
+            text: String::from("New task"),
+            done: false,
+            edit: false,
+        }
+    }
+}
 
+
+#[derive(serde::Serialize, serde::Deserialize)]
 struct Section {
     title: String,
     tasks: Vec<Task>,
@@ -24,12 +34,21 @@ struct Section {
 }
 
 impl Section {
+    fn default() -> Self {
+        Section {
+            title: String::from("New Section"),
+            tasks: vec![Task::default()],
+            edit: true,
+        }
+    }
+
     fn add_task(&mut self, task: &str, edit: bool) {
         self.tasks.push(Task {text: task.to_string(), done: false, edit});
     }
 }
 
 
+#[derive(serde::Serialize, serde::Deserialize)]
 enum Mode {
     Idle,
     EditTask,
@@ -37,6 +56,7 @@ enum Mode {
 }
 
 
+#[derive(serde::Serialize, serde::Deserialize)]
 struct MyApp {
     sections: Vec<Section>,
     mode: Mode,
@@ -46,38 +66,31 @@ struct MyApp {
 
 
 impl MyApp {
-    fn new(_cc: &eframe::CreationContext<'_>) -> Self {
-        let mut app = MyApp {
-            sections: vec![],
-            mode: Mode::Idle,
-            first_time_edit: false,
+    fn default() -> Self {
+        MyApp {
+            sections: vec![Section::default()],
+            mode: Mode::EditSection,
+            first_time_edit: true,
             scale_factor: 1.0,
-        };
+        }
+    }
 
-        app.add_section("Graphics", false);
-        app.add_section("Gameplay", false);
 
-        app.add_task("Graphics", "Main character sprite", false);
-        app.add_task("Graphics", "Lab sprite", false);
-        app.add_task("Graphics", "Brain sprite", false);
-
-        app.add_task("Gameplay", "Figure out basic puzzle mechanic", false);
-
-        app
+    fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        if let Some(storage) = cc.storage {
+            if let Some(app) = eframe::get_value(storage, eframe::APP_KEY) {
+                app
+            } else {
+                MyApp::default()
+            }
+        } else {
+            MyApp::default()
+        }
     }
 
 
     fn add_section(&mut self, title: &str, edit: bool) {
         self.sections.push(Section {title: title.to_string(), tasks: vec![], edit});
-    }
-
-    fn add_task(&mut self, section_title: &str, task: &str, edit: bool) {
-        for section in &mut self.sections {
-            if section_title == section.title {
-                section.add_task(task, edit);
-                break;
-            }
-        }
     }
 }
 
@@ -170,6 +183,7 @@ impl eframe::App for MyApp {
 
                                     if response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter) || i.key_pressed(egui::Key::Escape)) {
                                         self.mode = Mode::Idle;
+                                        task.edit = false;
                                     }
                                 } else {
                                     // Render normally
@@ -198,6 +212,7 @@ impl eframe::App for MyApp {
 
                             if response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter) || i.key_pressed(egui::Key::Escape)) {
                                 self.mode = Mode::Idle;
+                                section.edit = false;
                             }
                         } else {
                             ui.heading(&section.title);
@@ -216,5 +231,13 @@ impl eframe::App for MyApp {
             }
         });
     }
-}
 
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        eframe::set_value(storage, eframe::APP_KEY, self);
+    }
+
+    fn auto_save_interval(&self) -> std::time::Duration {
+        std::time::Duration::from_secs(30)
+    }
+
+}

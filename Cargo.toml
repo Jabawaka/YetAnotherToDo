@@ -6,4 +6,5 @@ authors = ["Sergio Rubio srubio@jabawaka.com"]
 publish = false
 
 [dependencies]
-eframe = "0.31"
+eframe = { version = "0.31", features = ["persistence"] }
+serde = { version = "1", features = ["derive"] }
