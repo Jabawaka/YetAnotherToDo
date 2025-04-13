@@ -13,6 +13,7 @@ struct Task {
     text: String,
     done: bool,
     edit: bool,
+    delete: bool,
 }
 
 impl Task {
@@ -21,6 +22,7 @@ impl Task {
             text: String::from("New task"),
             done: false,
             edit: false,
+            delete: false,
         }
     }
 }
@@ -31,6 +33,7 @@ struct Section {
     title: String,
     tasks: Vec<Task>,
     edit: bool,
+    delete: bool,
 }
 
 impl Section {
@@ -39,11 +42,12 @@ impl Section {
             title: String::from("New Section"),
             tasks: vec![Task::default()],
             edit: true,
+            delete: false,
         }
     }
 
     fn add_task(&mut self, task: &str, edit: bool) {
-        self.tasks.push(Task {text: task.to_string(), done: false, edit});
+        self.tasks.push(Task {text: task.to_string(), done: false, edit, delete: false});
     }
 }
 
@@ -90,7 +94,7 @@ impl MyApp {
 
 
     fn add_section(&mut self, title: &str, edit: bool) {
-        self.sections.push(Section {title: title.to_string(), tasks: vec![], edit});
+        self.sections.push(Section {title: title.to_string(), tasks: vec![], edit, delete: false});
     }
 }
 
@@ -186,6 +190,11 @@ impl eframe::App for MyApp {
                                             self.mode = Mode::Idle;
                                             task.edit = false;
                                         }
+
+                                        if ui.button("-").clicked() {
+                                            self.mode = Mode::Idle;
+                                            task.delete = true;
+                                        }
                                     } else {
                                         // Render normally
                                         ui.label(&task.text);
@@ -194,6 +203,8 @@ impl eframe::App for MyApp {
                             }
 
                             ui.add_space(12.0);
+
+                            section.tasks.retain(|t| t.delete != true);
                         }
                     },
 
@@ -202,19 +213,26 @@ impl eframe::App for MyApp {
                     // edit box
                     Mode::EditSection => {
                         for section in &mut self.sections {
-
                             if section.edit {
-                                let response = ui.add(TextEdit::singleline(&mut section.title));
+                                ui.horizontal(|ui| {
+                                    let response = ui.add(TextEdit::singleline(&mut section.title));
 
-                                if self.first_time_edit {
-                                    response.request_focus();
-                                    self.first_time_edit = false;
-                                }
+                                    if self.first_time_edit {
+                                        response.request_focus();
+                                        self.first_time_edit = false;
+                                    }
 
-                                if response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter) || i.key_pressed(egui::Key::Escape)) {
-                                    self.mode = Mode::Idle;
-                                    section.edit = false;
-                                }
+                                    if response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter) || i.key_pressed(egui::Key::Escape)) {
+                                        self.mode = Mode::Idle;
+                                        section.edit = false;
+                                    }
+
+                                    if ui.button("-").clicked() {
+                                        self.mode = Mode::Idle;
+                                        section.tasks.clear();
+                                        section.delete = true;
+                                    }
+                                });
                             } else {
                                 ui.heading(&section.title);
                             }
@@ -228,6 +246,9 @@ impl eframe::App for MyApp {
 
                             ui.add_space(12.0);
                         }
+
+                        // Delete any section that was set to be deleted
+                        self.sections.retain(|s| s.delete != true);
                     },
                 }
             });
