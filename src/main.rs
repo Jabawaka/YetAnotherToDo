@@ -128,6 +128,8 @@ impl eframe::App for MyApp {
                         }
 
                         for section in &mut self.sections {
+                            ui.separator();
+
                             // Render Section title as clickable, if clicked edit it
                             if ui.add(Label::new(RichText::new(&section.title).heading()).sense(Sense::click())).clicked() {
                                 // Enter edit section mode
@@ -156,6 +158,7 @@ impl eframe::App for MyApp {
                                 self.first_time_edit = true;
                             }
                         }
+                        ui.separator();
 
                         // Render an invisible Section used to add a Section
                         let response = ui.add(Label::new(RichText::new("                            ").heading()));
@@ -172,6 +175,8 @@ impl eframe::App for MyApp {
                     // edit box. This mode is also entered when a new task is added
                     Mode::EditTask => {
                         for section in &mut self.sections {
+                            ui.separator();
+
                             ui.heading(&section.title);
 
                             for task in &mut section.tasks {
@@ -206,6 +211,7 @@ impl eframe::App for MyApp {
 
                             section.tasks.retain(|t| t.delete != true);
                         }
+                        ui.separator();
                     },
 
                     // In this mode all Sections and Tasks are rendered as plain
@@ -213,6 +219,8 @@ impl eframe::App for MyApp {
                     // edit box
                     Mode::EditSection => {
                         for section in &mut self.sections {
+                            ui.separator();
+
                             if section.edit {
                                 ui.horizontal(|ui| {
                                     let response = ui.add(TextEdit::singleline(&mut section.title));
@@ -249,6 +257,8 @@ impl eframe::App for MyApp {
 
                         // Delete any section that was set to be deleted
                         self.sections.retain(|s| s.delete != true);
+
+                        ui.separator();
                     },
                 }
             });
